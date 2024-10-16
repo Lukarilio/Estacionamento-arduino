@@ -1,0 +1,135 @@
+#include <Servo.h>
+#include <NewPing.h>
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+
+// Configurações do sensor da catraca
+#define pino_trigger_catraca 4
+#define pino_echo_catraca 5
+#define MAX_DISTANCIA_CATRACA 10 
+
+// Configurações dos sensores de vagas
+#define pino_trigger_vaga1 6
+#define pino_echo_vaga1 7
+#define pino_trigger_vaga2 10
+#define pino_echo_vaga2 11
+#define pino_trigger_vaga3 12   
+#define pino_echo_vaga3 13      
+#define MAX_DISTANCIA_VAGA 5 
+
+// Configurações do sensor de saída
+#define pino_trigger_saida 2
+#define pino_echo_saida 3
+#define MAX_DISTANCIA_SAIDA 10 
+
+int totalVagas = 3;  
+int vagasLivres = totalVagas;
+
+// Inicializa os sensores ultrassônicos
+NewPing sonarCatraca(pino_trigger_catraca, pino_echo_catraca, MAX_DISTANCIA_CATRACA);
+NewPing sonarVaga1(pino_trigger_vaga1, pino_echo_vaga1, MAX_DISTANCIA_VAGA);
+NewPing sonarVaga2(pino_trigger_vaga2, pino_echo_vaga2, MAX_DISTANCIA_VAGA);
+NewPing sonarVaga3(pino_trigger_vaga3, pino_echo_vaga3, MAX_DISTANCIA_VAGA);
+NewPing sonarSaida(pino_trigger_saida, pino_echo_saida, MAX_DISTANCIA_SAIDA);
+
+// Configurações do servo motor
+#define pinServoEntrada 9 // Servo para entrada
+#define pinServoSaida A0  // Servo para saída
+Servo servoEntrada;
+Servo servoSaida;
+
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+bool lcdAtualizado = false;
+
+void setup() {
+  servoEntrada.attach(pinServoEntrada);
+  servoSaida.attach(pinServoSaida);
+  servoEntrada.write(0);  
+  servoSaida.write(0);  
+  Serial.begin(9600);
+  
+  lcd.init();
+  lcd.clear();
+  lcd.backlight();
+  lcd.setCursor(0, 0);
+  lcd.print(" ESTACIONAMENTO");
+  lcd.setCursor(0, 1);
+  lcd.print("    ABERTO ");
+  delay(3000);
+  lcd.clear();
+}
+
+unsigned int readDistanceStable(NewPing &sonar) {
+  int readings = 5;           // Número de leituras
+  int totalDistance = 0;
+
+  for (int i = 0; i < readings; i++) {
+    totalDistance += sonar.ping_cm();
+    delay(50);                // Pequeno delay para estabilizar leituras
+  }
+  
+  return totalDistance / readings;  // Retorna a média
+}
+
+void loop() {
+  unsigned int distancia_catraca = sonarCatraca.ping_cm();
+  unsigned int distancia_vaga1 = sonarVaga1.ping_cm();
+  unsigned int distancia_vaga2 = sonarVaga2.ping_cm();
+  unsigned int distancia_vaga3 = readDistanceStable(sonarVaga3); // Usa a média para o sensor 3
+  unsigned int distancia_saida = sonarSaida.ping_cm(); // Lê a distância do sensor de saída
+
+  // Exibe no monitor serial para monitoramento
+  Serial.print("Distancia Catraca: ");
+  Serial.println(distancia_catraca);
+  Serial.print("Distancia Vaga 1: ");
+  Serial.println(distancia_vaga1);
+  Serial.print("Distancia Vaga 2: ");
+  Serial.println(distancia_vaga2);
+  Serial.print("Distancia Vaga 3: ");
+  Serial.println(distancia_vaga3);
+  Serial.print("Distancia Saida: ");
+  Serial.println(distancia_saida);
+
+  // Verifica ocupação das vagas
+  bool vaga1Ocupada = (distancia_vaga1 > 0 && distancia_vaga1 <= MAX_DISTANCIA_VAGA);
+  bool vaga2Ocupada = (distancia_vaga2 > 0 && distancia_vaga2 <= MAX_DISTANCIA_VAGA);
+  bool vaga3Ocupada = (distancia_vaga3 > 0 && distancia_vaga3 <= MAX_DISTANCIA_VAGA);
+
+  // Atualiza a contagem de vagas livres e ocupadas
+  int vagasOcupadas = vaga1Ocupada + vaga2Ocupada + vaga3Ocupada;
+  vagasLivres = totalVagas - vagasOcupadas;
+  
+  // Atualiza o display
+  lcd.clear();
+  if (vagasLivres == 0) {
+    lcd.setCursor(0, 0);
+    lcd.print("ESTACIONAMENTO");
+    lcd.setCursor(0, 1);
+    lcd.print("    FECHADO    ");
+  } else {
+    lcd.setCursor(0, 0);
+    lcd.print("VagasLivres: ");
+    lcd.print(vagasLivres);
+    lcd.setCursor(0, 1);
+    lcd.print("VagasOcupadas: ");
+    lcd.print(vagasOcupadas);
+  }
+
+  // Verifica se a catraca deve abrir, mas somente se há vagas livres
+  if (distancia_catraca > 0 && distancia_catraca <= MAX_DISTANCIA_CATRACA && vagasLivres > 0) {
+    servoEntrada.write(120);  
+    delay(6000);        
+    servoEntrada.write(0);    
+    delay(1000);        
+  }
+
+  // Verifica se o sensor de saída detecta um carro
+  if (distancia_saida > 0 && distancia_saida <= MAX_DISTANCIA_SAIDA) {
+    servoSaida.write(120);  
+    delay(6000);        
+    servoSaida.write(0);    
+    delay(1000);        
+  }
+
+  delay(300); // Delay aumentado para uma melhor leitura dos sensores
+}
