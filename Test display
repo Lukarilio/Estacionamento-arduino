@@ -1,0 +1,24 @@
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+
+// Inicializa o display no endereço 0x27 e define o tamanho de 16 colunas e 2 linhas
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+void setup() {
+    // Inicia o LCD
+    lcd.init();
+    lcd.clear();
+    lcd.begin(16, 2);
+    lcd.backlight(); // Liga a luz de fundo do LCD
+  
+    // Exibe a mensagem "Bem-vindo!" na primeira linha
+    lcd.setCursor(0, 0);
+    lcd.print("Bem-vindo!");
+
+    lcd.setCursor(0,1);
+    lcd.print("");
+}
+
+void loop() {
+    // Não é necessário fazer nada no loop
+}
