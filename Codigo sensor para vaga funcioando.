@@ -1,0 +1,32 @@
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+#include <NewPing.h>
+
+// Definições do sensor ultrassônico
+#define pino_trigger 4
+#define pino_echo 5
+#define MAX_DISTANCIA 40  // Distância máxima de leitura em cm
+
+// Inicializa o sensor ultrassônico
+NewPing sonar(pino_trigger, pino_echo, MAX_DISTANCIA);
+
+// Inicializa o display LCD no endereço 0x27 e define o tamanho de 16 colunas e 2 linhas
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+void setup() {
+  // Inicia a comunicação serial para monitorar dados do sensor
+  Serial.begin(9600);
+  Serial.println("Iniciando...");
+
+  // Inicia o LCD
+  lcd.init();
+  lcd.clear();
+  lcd.begin(16, 2);
+  lcd.backlight(); // Liga a luz de fundo do LCD
+
+  // Exibe uma mensagem inicial no LCD
+  lcd.setCursor(0, 0);
+  lcd.print("Estacionamento");
+  delay(2000);  // Aguarda 2 segundos antes de continuar
+  lcd.clear();  // Limpa o display
+}
