@@ -1,4 +1,4 @@
-Sistema Inteligente de Monitoramento de Estacionamentos
+Sistema automático de estacionamento com painel informativo e notificações
 
 O projeto consiste em um sistema inteligente para o monitoramento de estacionamentos, que registra a entrada e a saída de veículos, além de informar em tempo real a disponibilidade de vagas. O sistema contará com as seguintes funcionalidades:
 
